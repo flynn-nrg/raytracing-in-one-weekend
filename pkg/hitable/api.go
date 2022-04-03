@@ -22,3 +22,8 @@ type HitRecord struct {
 func (hr *HitRecord) Normal() *vec3.Vec3Impl {
 	return hr.normal
 }
+
+// P returns the intersection point.
+func (hr *HitRecord) P() *vec3.Vec3Impl {
+	return hr.p
+}

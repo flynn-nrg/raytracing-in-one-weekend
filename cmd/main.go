@@ -11,9 +11,20 @@ import (
 	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/vec3"
 )
 
+func randomInUnitSphere() *vec3.Vec3Impl {
+	for {
+		p := vec3.Sub(vec3.ScalarMul(&vec3.Vec3Impl{X: rand.Float64(), Y: rand.Float64(), Z: rand.Float64()}, 2.0),
+			&vec3.Vec3Impl{X: 1.0, Y: 1.0, Z: 1.0})
+		if p.SquaredLength() < 1.0 {
+			return p
+		}
+	}
+}
+
 func color(r ray.Ray, world *hitable.HitableSlice) *vec3.Vec3Impl {
-	if rec, ok := world.Hit(r, 0.0, math.MaxFloat64); ok {
-		return vec3.ScalarMul(&vec3.Vec3Impl{X: rec.Normal().X + 1, Y: rec.Normal().Y + 1, Z: rec.Normal().Z + 1}, 0.5)
+	if rec, ok := world.Hit(r, 0.001, math.MaxFloat64); ok {
+		target := vec3.Add(vec3.Add(rec.P(), rec.Normal()), randomInUnitSphere())
+		return vec3.ScalarMul(color(ray.New(rec.P(), vec3.Sub(target, rec.P())), world), 0.5)
 	}
 	unitDirection := vec3.UnitVector(r.Direction())
 	t := 0.5*unitDirection.Y + 1.0
@@ -46,6 +57,8 @@ func main() {
 			}
 
 			col = vec3.ScalarDiv(col, float64(ns))
+			// gamma 2
+			col = &vec3.Vec3Impl{X: math.Sqrt(col.X), Y: math.Sqrt(col.Y), Z: math.Sqrt(col.Z)}
 			ir := int(255.99 * col.X)
 			ig := int(255.99 * col.Y)
 			ib := int(255.99 * col.Z)
