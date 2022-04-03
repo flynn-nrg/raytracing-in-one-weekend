@@ -1,6 +1,8 @@
 package hitable
 
 import (
+	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/hitrecord"
+	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/material"
 	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/ray"
 )
 
@@ -20,18 +22,20 @@ func NewSlice(hitables []Hitable) *HitableSlice {
 }
 
 // Hit computes whether a ray intersects with any of the elements in the slice.
-func (hs *HitableSlice) Hit(r ray.Ray, tMin float64, tMax float64) (*HitRecord, bool) {
-	var rec *HitRecord
+func (hs *HitableSlice) Hit(r ray.Ray, tMin float64, tMax float64) (*hitrecord.HitRecord, material.Material, bool) {
+	var rec *hitrecord.HitRecord
+	var mat material.Material
 	var hitAnything bool
 	closestSoFar := tMax
 
 	for _, h := range hs.hitables {
-		if tempRec, ok := h.Hit(r, tMin, closestSoFar); ok {
+		if tempRec, tempMat, ok := h.Hit(r, tMin, closestSoFar); ok {
 			rec = tempRec
+			mat = tempMat
 			hitAnything = ok
-			closestSoFar = rec.t
+			closestSoFar = rec.T()
 		}
 	}
 
-	return rec, hitAnything
+	return rec, mat, hitAnything
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/camera"
 	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/hitable"
+	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/material"
 	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/ray"
 	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/vec3"
 )
@@ -21,10 +22,12 @@ func randomInUnitSphere() *vec3.Vec3Impl {
 	}
 }
 
-func color(r ray.Ray, world *hitable.HitableSlice) *vec3.Vec3Impl {
-	if rec, ok := world.Hit(r, 0.001, math.MaxFloat64); ok {
-		target := vec3.Add(vec3.Add(rec.P(), rec.Normal()), randomInUnitSphere())
-		return vec3.ScalarMul(color(ray.New(rec.P(), vec3.Sub(target, rec.P())), world), 0.5)
+func color(r ray.Ray, world *hitable.HitableSlice, depth int) *vec3.Vec3Impl {
+	if rec, mat, ok := world.Hit(r, 0.001, math.MaxFloat64); ok {
+		scattered, attenuation, ok := mat.Scatter(r, rec)
+		if depth < 50 && ok {
+			return vec3.Mul(attenuation, color(scattered, world, depth+1))
+		}
 	}
 	unitDirection := vec3.UnitVector(r.Direction())
 	t := 0.5*unitDirection.Y + 1.0
@@ -40,8 +43,10 @@ func main() {
 	fmt.Printf("P3\n%v %v\n255\n", nx, ny)
 
 	world := hitable.NewSlice([]hitable.Hitable{
-		hitable.NewSphere(&vec3.Vec3Impl{Z: -1}, 0.5),
-		hitable.NewSphere(&vec3.Vec3Impl{Y: -100.5, Z: -1}, 100),
+		hitable.NewSphere(&vec3.Vec3Impl{Z: -1}, 0.5, material.NewLambertian(&vec3.Vec3Impl{X: 0.8, Y: 0.3, Z: 0.3})),
+		hitable.NewSphere(&vec3.Vec3Impl{Y: -100.5, Z: -1}, 100, material.NewLambertian(&vec3.Vec3Impl{X: 0.8, Y: 0.8})),
+		hitable.NewSphere(&vec3.Vec3Impl{X: 1.0, Z: -1}, 0.5, material.NewMetal(&vec3.Vec3Impl{X: 0.8, Y: 0.6, Z: 0.2}, 1.0)),
+		hitable.NewSphere(&vec3.Vec3Impl{X: -1.0, Z: -1}, 0.5, material.NewMetal(&vec3.Vec3Impl{X: 0.8, Y: 0.8, Z: 0.8}, 0.3)),
 	})
 
 	cam := camera.New()
@@ -53,7 +58,7 @@ func main() {
 				u := (float64(i) + rand.Float64()) / float64(nx)
 				v := (float64(j) + rand.Float64()) / float64(ny)
 				r := cam.GetRay(u, v)
-				col = vec3.Add(col, color(r, world))
+				col = vec3.Add(col, color(r, world, 0))
 			}
 
 			col = vec3.ScalarDiv(col, float64(ns))
