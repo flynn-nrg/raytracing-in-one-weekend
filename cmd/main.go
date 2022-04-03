@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"math"
+	"math/rand"
 
+	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/camera"
 	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/hitable"
 	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/ray"
 	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/vec3"
@@ -22,25 +24,28 @@ func color(r ray.Ray, world *hitable.HitableSlice) *vec3.Vec3Impl {
 func main() {
 	nx := 200
 	ny := 100
-	fmt.Printf("P3\n%v %v\n255\n", nx, ny)
+	ns := 100
 
-	lowerLeftCorner := &vec3.Vec3Impl{X: -2.0, Y: -1.0, Z: -1.0}
-	horizontal := &vec3.Vec3Impl{X: 4.0}
-	vertical := &vec3.Vec3Impl{Y: 2.0}
-	origin := &vec3.Vec3Impl{}
+	fmt.Printf("P3\n%v %v\n255\n", nx, ny)
 
 	world := hitable.NewSlice([]hitable.Hitable{
 		hitable.NewSphere(&vec3.Vec3Impl{Z: -1}, 0.5),
 		hitable.NewSphere(&vec3.Vec3Impl{Y: -100.5, Z: -1}, 100),
 	})
+
+	cam := camera.New()
+
 	for j := ny - 1; j >= 0; j-- {
 		for i := 0; i < nx; i++ {
-			u := float64(i) / float64(nx)
-			v := float64(j) / float64(ny)
+			col := &vec3.Vec3Impl{}
+			for s := 0; s < ns; s++ {
+				u := (float64(i) + rand.Float64()) / float64(nx)
+				v := (float64(j) + rand.Float64()) / float64(ny)
+				r := cam.GetRay(u, v)
+				col = vec3.Add(col, color(r, world))
+			}
 
-			r := ray.New(origin, vec3.Add(lowerLeftCorner, vec3.Add(vec3.ScalarMul(horizontal, u), vec3.ScalarMul(vertical, v))))
-			col := color(r, world)
-
+			col = vec3.ScalarDiv(col, float64(ns))
 			ir := int(255.99 * col.X)
 			ig := int(255.99 * col.Y)
 			ib := int(255.99 * col.Z)
