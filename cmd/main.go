@@ -43,10 +43,11 @@ func main() {
 	fmt.Printf("P3\n%v %v\n255\n", nx, ny)
 
 	world := hitable.NewSlice([]hitable.Hitable{
-		hitable.NewSphere(&vec3.Vec3Impl{Z: -1}, 0.5, material.NewLambertian(&vec3.Vec3Impl{X: 0.8, Y: 0.3, Z: 0.3})),
+		hitable.NewSphere(&vec3.Vec3Impl{Z: -1}, 0.5, material.NewLambertian(&vec3.Vec3Impl{X: 0.1, Y: 0.2, Z: 0.5})),
 		hitable.NewSphere(&vec3.Vec3Impl{Y: -100.5, Z: -1}, 100, material.NewLambertian(&vec3.Vec3Impl{X: 0.8, Y: 0.8})),
-		hitable.NewSphere(&vec3.Vec3Impl{X: 1.0, Z: -1}, 0.5, material.NewMetal(&vec3.Vec3Impl{X: 0.8, Y: 0.6, Z: 0.2}, 1.0)),
-		hitable.NewSphere(&vec3.Vec3Impl{X: -1.0, Z: -1}, 0.5, material.NewMetal(&vec3.Vec3Impl{X: 0.8, Y: 0.8, Z: 0.8}, 0.3)),
+		hitable.NewSphere(&vec3.Vec3Impl{X: 1.0, Z: -1}, 0.5, material.NewMetal(&vec3.Vec3Impl{X: 0.8, Y: 0.6, Z: 0.2}, 0.0)),
+		hitable.NewSphere(&vec3.Vec3Impl{X: -1.0, Z: -1}, 0.5, material.NewDielectric(1.5)),
+		hitable.NewSphere(&vec3.Vec3Impl{X: -1.0, Z: -1}, -0.45, material.NewDielectric(1.5)),
 	})
 
 	cam := camera.New()
