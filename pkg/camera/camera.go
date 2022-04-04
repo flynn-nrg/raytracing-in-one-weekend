@@ -2,6 +2,8 @@
 package camera
 
 import (
+	"math"
+
 	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/ray"
 	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/vec3"
 )
@@ -15,12 +17,25 @@ type Camera struct {
 }
 
 // New returns an instance of a camera.
-func New() *Camera {
+func New(lookFrom *vec3.Vec3Impl, lookAt *vec3.Vec3Impl, vup *vec3.Vec3Impl, vfov float64, aspect float64) *Camera {
+	theta := vfov * math.Pi / 180
+	halfHeight := math.Tan(theta / 2.0)
+	halfWidth := aspect * halfHeight
+	w := vec3.UnitVector(vec3.Sub(lookFrom, lookAt))
+	u := vec3.UnitVector(vec3.Cross(vup, w))
+	v := vec3.Cross(w, u)
+
+	// origin - half_width*u - half_height*v - w
+	lowerLeftCorner := vec3.Sub(lookFrom, vec3.ScalarMul(u, halfWidth), vec3.ScalarMul(v, halfHeight), w)
+	horizontal := vec3.ScalarMul(u, 2.0*halfWidth)
+	vertical := vec3.ScalarMul(v, 2.0*halfHeight)
+	origin := lookFrom
+
 	return &Camera{
-		lowerLeftCorner: &vec3.Vec3Impl{X: -2.0, Y: -1.0, Z: -1.0},
-		horizontal:      &vec3.Vec3Impl{X: 4.0},
-		vertical:        &vec3.Vec3Impl{Y: 2.0},
-		origin:          &vec3.Vec3Impl{},
+		lowerLeftCorner: lowerLeftCorner,
+		horizontal:      horizontal,
+		vertical:        vertical,
+		origin:          origin,
 	}
 }
 
@@ -28,6 +43,6 @@ func New() *Camera {
 func (c *Camera) GetRay(u float64, v float64) *ray.RayImpl {
 	return ray.New(c.origin,
 		// lowerLeftCorner + u*horizontal + v*vertical - origin
-		vec3.Sub(vec3.Add(c.lowerLeftCorner, vec3.Add(vec3.ScalarMul(c.horizontal, u),
-			vec3.ScalarMul(c.vertical, v))), c.origin))
+		vec3.Sub(vec3.Add(c.lowerLeftCorner, vec3.ScalarMul(c.horizontal, u),
+			vec3.ScalarMul(c.vertical, v)), c.origin))
 }

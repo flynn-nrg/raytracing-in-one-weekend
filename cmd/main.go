@@ -50,7 +50,7 @@ func main() {
 		hitable.NewSphere(&vec3.Vec3Impl{X: -1.0, Z: -1}, -0.45, material.NewDielectric(1.5)),
 	})
 
-	cam := camera.New()
+	cam := camera.New(&vec3.Vec3Impl{X: -2, Y: 2, Z: 1}, &vec3.Vec3Impl{X: 0, Y: 0, Z: -1}, &vec3.Vec3Impl{Y: 1}, 20, float64(nx)/float64(ny))
 
 	for j := ny - 1; j >= 0; j-- {
 		for i := 0; i < nx; i++ {
