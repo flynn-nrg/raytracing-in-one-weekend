@@ -12,14 +12,42 @@ import (
 	"github.com/flynn-nrg/raytracing-in-one-weekend/pkg/vec3"
 )
 
-func randomInUnitSphere() *vec3.Vec3Impl {
-	for {
-		p := vec3.Sub(vec3.ScalarMul(&vec3.Vec3Impl{X: rand.Float64(), Y: rand.Float64(), Z: rand.Float64()}, 2.0),
-			&vec3.Vec3Impl{X: 1.0, Y: 1.0, Z: 1.0})
-		if p.SquaredLength() < 1.0 {
-			return p
+func randomScene() *hitable.HitableSlice {
+	spheres := []hitable.Hitable{hitable.NewSphere(&vec3.Vec3Impl{X: 0, Y: -1000, Z: 0}, 1000, material.NewLambertian(&vec3.Vec3Impl{X: 0.5, Y: 0.5, Z: 0.5}))}
+	for a := -11; a < 11; a++ {
+		for b := -11; b < 11; b++ {
+			chooseMat := rand.Float64()
+			center := &vec3.Vec3Impl{X: float64(a) + 0.9*rand.Float64(), Y: 0.2, Z: float64(b) + 0.9*rand.Float64()}
+			if vec3.Sub(center, &vec3.Vec3Impl{X: 4, Y: 0.2, Z: 0}).Length() > 0.9 {
+				if chooseMat < 0.8 {
+					// diffuse
+					spheres = append(spheres, hitable.NewSphere(center, 0.2,
+						material.NewLambertian(&vec3.Vec3Impl{
+							X: rand.Float64() * rand.Float64(),
+							Y: rand.Float64() * rand.Float64(),
+							Z: rand.Float64() * rand.Float64(),
+						})))
+				} else if chooseMat < 0.95 {
+					// metal
+					spheres = append(spheres, hitable.NewSphere(center, 0.2,
+						material.NewMetal(&vec3.Vec3Impl{
+							X: 0.5 * (1.0 - rand.Float64()),
+							Y: 0.5 * (1.0 - rand.Float64()),
+							Z: 0.5 * (1.0 - rand.Float64()),
+						}, 0.2*rand.Float64())))
+				} else {
+					// glass
+					spheres = append(spheres, hitable.NewSphere(center, 0.2, material.NewDielectric(1.5)))
+				}
+			}
 		}
 	}
+
+	spheres = append(spheres, hitable.NewSphere(&vec3.Vec3Impl{Y: 1.0}, 1.0, material.NewDielectric(1.5)))
+	spheres = append(spheres, hitable.NewSphere(&vec3.Vec3Impl{X: -4.0, Y: 1.0}, 1.0, material.NewLambertian(&vec3.Vec3Impl{X: 0.4, Y: 0.2, Z: 0.1})))
+	spheres = append(spheres, hitable.NewSphere(&vec3.Vec3Impl{X: 4.0, Y: 1.0}, 1.0, material.NewMetal(&vec3.Vec3Impl{X: 0.7, Y: 0.6, Z: 0.5}, 0.0)))
+
+	return hitable.NewSlice(spheres)
 }
 
 func color(r ray.Ray, world *hitable.HitableSlice, depth int) *vec3.Vec3Impl {
@@ -36,25 +64,18 @@ func color(r ray.Ray, world *hitable.HitableSlice, depth int) *vec3.Vec3Impl {
 }
 
 func main() {
-	nx := 200
-	ny := 100
+	nx := 1920
+	ny := 1080
 	ns := 100
 
 	fmt.Printf("P3\n%v %v\n255\n", nx, ny)
 
-	world := hitable.NewSlice([]hitable.Hitable{
-		hitable.NewSphere(&vec3.Vec3Impl{Z: -1}, 0.5, material.NewLambertian(&vec3.Vec3Impl{X: 0.1, Y: 0.2, Z: 0.5})),
-		hitable.NewSphere(&vec3.Vec3Impl{Y: -100.5, Z: -1}, 100, material.NewLambertian(&vec3.Vec3Impl{X: 0.8, Y: 0.8})),
-		hitable.NewSphere(&vec3.Vec3Impl{X: 1.0, Z: -1}, 0.5, material.NewMetal(&vec3.Vec3Impl{X: 0.8, Y: 0.6, Z: 0.2}, 0.0)),
-		hitable.NewSphere(&vec3.Vec3Impl{X: -1.0, Z: -1}, 0.5, material.NewDielectric(1.5)),
-		hitable.NewSphere(&vec3.Vec3Impl{X: -1.0, Z: -1}, -0.45, material.NewDielectric(1.5)),
-	})
-
-	lookFrom := &vec3.Vec3Impl{X: 3.0, Y: 3.0, Z: 2.0}
-	lookAt := &vec3.Vec3Impl{Z: -1}
+	world := randomScene()
+	lookFrom := &vec3.Vec3Impl{X: 13.0, Y: 2.0, Z: 3.0}
+	lookAt := &vec3.Vec3Impl{}
 	vup := &vec3.Vec3Impl{Y: 1}
-	distToFocus := vec3.Sub(lookFrom, lookAt).Length()
-	aperture := 2.0
+	distToFocus := 10.0
+	aperture := 0.1
 	aspect := float64(nx) / float64(ny)
 	vfov := float64(20.0)
 	cam := camera.New(lookFrom, lookAt, vup, vfov, aspect, aperture, distToFocus)
